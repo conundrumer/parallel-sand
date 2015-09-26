@@ -14,10 +14,17 @@ import thunk from 'redux-thunk'
 import * as reducers from './reducers'
 import App from './components/App'
 
+import _ from 'lodash'
+let tempData = _.range(64).map(y =>
+  _.range(64).map(x =>
+    Math.random() > 0.5 ? 1 : 0
+  )
+)
+
 let render = (store, rootElement) => {
   React.render(
     <Provider store={store}>
-      {() => <App />}
+      {() => <App width={64} height={64} grid={tempData} />}
     </Provider>,
     rootElement
   )
