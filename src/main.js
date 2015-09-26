@@ -11,8 +11,8 @@ import { createStore, applyMiddleware, combineReducers } from 'redux'
 import { Provider } from 'react-redux'
 import thunk from 'redux-thunk'
 
-var reducers = require('./reducers')
-var App = require('./components/App')
+import reducers from './reducers')
+import App from './components/App')
 
 let render = (store, rootElement) => {
   React.render(
