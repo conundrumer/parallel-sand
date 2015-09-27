@@ -7,7 +7,9 @@ const N = 64
 function makeRandomGrid () {
   return _.range(N).map(y =>
     _.range(N).map(x => ({
-      type: Math.random() > 0.5 ? 1 : 0
+      density: 	Math.random() < 1/4 ? 3 : 
+      					Math.random() < 1/3 ? 2 : 
+      					Math.random() < 1/2 ? 1 : 0
     }))
   )
 }
@@ -26,7 +28,7 @@ function getLocalGrid (grid, i, j) {
   let inRange = (x, y) => x >= 0 && x < w && y >= 0 && y < h
   return _.map(_.range(-1, 2), y =>
     _.map(_.range(-1, 2), x =>
-      inRange(j + x, i + y) ? grid[i + y][j + x] : { type: 100 }
+      inRange(j + x, i + y) ? grid[i + y][j + x] : { density: 255 }
     )
   )
 }
@@ -48,31 +50,13 @@ const INIT = {
   }
 }
 
+import {swap1, swap2, swap3} from './rules'
+
 export function data (state = INIT.data, action) {
   switch (action.type) {
     case ActionTypes.STEP:
       return {...state,
-        grid: step(state.grid, [(localGrid) => {
-          let g = _.map(_.flatten(localGrid), cell => cell.type === 1 ? 1 : 0)
-          let sum = _.sum(_.map([0, 1, 2, 3, 5, 6, 7, 8], i => g[i]))
-          let center = g[4]
-          if (center === 1) {
-            if (sum < 2) {
-              return {type: 0}
-            }
-            if (sum === 2 || sum === 3) {
-              return {type: 1}
-            }
-            if (sum > 3) {
-              return {type: 0}
-            }
-          } else {
-            if (sum === 3) {
-              return {type: 1}
-            }
-          }
-          return localGrid[1][1]
-        }])
+        grid: step(state.grid, [swap1, swap2, swap3])
       }
     default:
       return state

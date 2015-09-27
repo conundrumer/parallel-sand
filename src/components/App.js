@@ -1,10 +1,24 @@
 import React from 'react'
 
 function getCellColor (cell) {
-  let type = cell.type
+  let density = cell.density
   return [
-    type > 0 ? 255 : 0,
-    type > 0 ? 255 : 0,
+    (() => {
+      switch (density) {
+        case 1: return 127
+        case 2: /* falls through */
+        case 3: return 255
+        default: return 0
+      }
+    })(),
+    (() => {
+      switch (density) {
+        case 1: return 0
+        case 2: return 127
+        case 3: return 255
+        default: return 0
+      }
+    })(),
     0,
     255
   ]
