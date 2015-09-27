@@ -5,7 +5,7 @@ export function resetMetaData ([,[,center,],]) {
   }
 }
 
-export function swap(d) {
+export function gravity (d) {
   return ([[,top,],[,center,],[,bottom,]]) => {
     if (center.moved === true) {
       return center

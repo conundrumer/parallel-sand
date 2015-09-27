@@ -51,13 +51,13 @@ const INIT = {
   }
 }
 
-import {resetMetaData, swap} from './rules'
+import {resetMetaData, gravity} from './rules'
 
 export function data (state = INIT.data, action) {
   switch (action.type) {
     case ActionTypes.STEP:
       return {...state,
-        grid: step(state.grid, [resetMetaData, swap(1), swap(2), swap(3)])
+        grid: step(state.grid, [resetMetaData, gravity(1), gravity(2), gravity(3)])
       }
     default:
       return state
