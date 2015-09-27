@@ -16,7 +16,7 @@ export default class App extends React.Component {
 
     setInterval(() => this.props.dispatch({
       type: 'STEP'
-    }), 1000)
+    }), 100)
 
     this.canvas = React.findDOMNode(this.refs.canvas)
     this.ctx = this.canvas.getContext('2d')
