@@ -3,6 +3,11 @@ import React from 'react'
 export default class App extends React.Component {
 
   componentDidMount () {
+
+    setInterval(() => this.props.dispatch({
+      type: 'STEP'
+    }), 1000)
+
     this.canvas = React.findDOMNode(this.refs.canvas)
     this.ctx = this.canvas.getContext('2d')
     this.componentDidUpdate()

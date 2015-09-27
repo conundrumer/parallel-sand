@@ -8,23 +8,21 @@ import 'normalize.css'
 
 import React from 'react'
 import { createStore, applyMiddleware, combineReducers } from 'redux'
-import { Provider } from 'react-redux'
+import { Provider, connect } from 'react-redux'
 import thunk from 'redux-thunk'
 
 import * as reducers from './reducers'
 import App from './components/App'
 
-import _ from 'lodash'
-let tempData = _.range(64).map(y =>
-  _.range(64).map(x =>
-    Math.random() > 0.5 ? 1 : 0
-  )
-)
+function select (state) {
+  return state.data
+}
 
+let ConnectedApp = connect(select)(App)
 let render = (store, rootElement) => {
   React.render(
     <Provider store={store}>
-      {() => <App width={64} height={64} grid={tempData} />}
+      {() => <ConnectedApp />}
     </Provider>,
     rootElement
   )
