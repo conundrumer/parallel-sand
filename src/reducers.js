@@ -7,9 +7,10 @@ const N = 64
 function makeRandomGrid () {
   return _.range(N).map(y =>
     _.range(N).map(x => ({
-      density: 	Math.random() < 1/4 ? 3 : 
-      					Math.random() < 1/3 ? 2 : 
-      					Math.random() < 1/2 ? 1 : 0
+      density:
+        Math.random() < 1 / 4 ? 3 :
+        Math.random() < 1 / 3 ? 2 :
+        Math.random() < 1 / 2 ? 1 : 0
     }))
   )
 }
@@ -50,13 +51,13 @@ const INIT = {
   }
 }
 
-import {swap} from './rules'
+import {resetMetaData, swap} from './rules'
 
 export function data (state = INIT.data, action) {
   switch (action.type) {
     case ActionTypes.STEP:
       return {...state,
-        grid: step(state.grid, [swap(1), swap(2), swap(3)])
+        grid: step(state.grid, [resetMetaData, swap(1), swap(2), swap(3)])
       }
     default:
       return state
