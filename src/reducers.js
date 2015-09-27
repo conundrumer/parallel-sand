@@ -3,12 +3,13 @@ import * as ActionTypes from './actions'
 // import
 function makeRandomGrid () {
   return _.range(64).map(y =>
-    _.range(64).map(x =>
-      Math.random() > 0.5 ? 1 : 0
-    )
+    _.range(64).map(x => ({
+      type: Math.random() > 0.5 ? 1 : 0
+    }))
   )
 }
-function step (grid) {
+
+function step (grid, rules) {
   return makeRandomGrid()
 }
 

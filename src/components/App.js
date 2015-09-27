@@ -1,5 +1,15 @@
 import React from 'react'
 
+function getCellColor (cell) {
+  let type = cell.type
+  return [
+    type > 0 ? 255 : 0,
+    type > 0 ? 255 : 0,
+    0,
+    255
+  ]
+}
+
 export default class App extends React.Component {
 
   componentDidMount () {
@@ -20,12 +30,7 @@ export default class App extends React.Component {
     grid.forEach((row, y) => {
       row.forEach((cell, x) => {
         let index = (x + y * imageData.width) * 4
-        let [r, g, b, a] = [
-          cell > 0 ? 255 : 0,
-          cell > 0 ? 255 : 0,
-          0,
-          255
-        ]
+        let [r, g, b, a] = getCellColor(cell)
         imageData.data[index + 0] = r
         imageData.data[index + 1] = g
         imageData.data[index + 2] = b
