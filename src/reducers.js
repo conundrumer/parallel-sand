@@ -50,13 +50,13 @@ const INIT = {
   }
 }
 
-import {swap1, swap2, swap3} from './rules'
+import {swap} from './rules'
 
 export function data (state = INIT.data, action) {
   switch (action.type) {
     case ActionTypes.STEP:
       return {...state,
-        grid: step(state.grid, [swap1, swap2, swap3])
+        grid: step(state.grid, [swap(1), swap(2), swap(3)])
       }
     default:
       return state
