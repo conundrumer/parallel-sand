@@ -3,6 +3,14 @@ import * as ActionTypes from './actions'
 
 const N = 64
 
+function map2 (arrays, fn) {
+  return _.map(arrays, (array, i) =>
+    _.map(array, (x, j) =>
+      fn(x, i, j)
+    )
+  )
+}
+
 // import
 function makeRandomGrid () {
   return _.range(N).map(y =>
@@ -12,14 +20,6 @@ function makeRandomGrid () {
         Math.random() < 1 / 3 ? 2 :
         Math.random() < 1 / 2 ? 1 : 0
     }))
-  )
-}
-
-function map2 (arrays, fn) {
-  return _.map(arrays, (array, i) =>
-    _.map(array, (x, j) =>
-      fn(x, i, j)
-    )
   )
 }
 
@@ -33,6 +33,31 @@ function getLocalGrid (grid, i, j) {
     )
   )
 }
+
+function ensureConservationOfMass (grid, nextGrid) {
+  let [counts, nextCounts] = _.map([grid, nextGrid], g =>
+    _.mapValues(_.groupBy(_.flatten(g), 'density'), dGroup => dGroup.length)
+  )
+  return _.eq(counts, nextCounts)
+}
+
+// function stepDebug (grid, rules) {
+//   let g = _.reduce(rules, (prevGrid, rule) => {
+//     let x = map2(prevGrid, (cell, i, j) => {
+//       let g = getLocalGrid(prevGrid, i, j)
+//       return rule(g)
+//     })
+//     // console.table(map2(x, cell => cell.density))
+//     return x
+//   }, grid)
+//   if (!ensureConservationOfMass(grid, g)) {
+//     console.error('mass not conserved:')
+//     alert('mass not conserved')
+//     console.table(map2(grid, cell => cell.density))
+//     console.table(map2(g, cell => cell.density))
+//   }
+//   return g
+// }
 
 function step (grid, rules) {
   return _.reduce(rules, (prevGrid, rule) =>
@@ -51,13 +76,31 @@ const INIT = {
   }
 }
 
-import {resetMetaData, gravity} from './rules'
+import {resetMetaData, gravity, slideDisplace, slide} from './rules'
+const rules = [
+  resetMetaData,
+  gravity(1),
+  slideDisplace(1),
+  slideDisplace(1, true),
+  slide(1),
+  slide(1, true),
+  gravity(2),
+  slideDisplace(2),
+  slideDisplace(2, true),
+  slide(2),
+  slide(2, true),
+  gravity(3),
+  slideDisplace(3),
+  slideDisplace(3, true),
+  slide(3),
+  slide(3, true)
+]
 
 export function data (state = INIT.data, action) {
   switch (action.type) {
     case ActionTypes.STEP:
       return {...state,
-        grid: step(state.grid, [resetMetaData, gravity(1), gravity(2), gravity(3)])
+        grid: step(state.grid, rules)
       }
     default:
       return state

@@ -1,5 +1,7 @@
 import React from 'react'
 
+import '../styles.less'
+
 function getCellColor (cell) {
   let density = cell.density
   return [
@@ -30,7 +32,7 @@ export default class App extends React.Component {
 
     setInterval(() => this.props.dispatch({
       type: 'STEP'
-    }), 100)
+    }), 50)
 
     this.canvas = React.findDOMNode(this.refs.canvas)
     this.ctx = this.canvas.getContext('2d')
