@@ -23,15 +23,20 @@ function makeRandomGrid () {
   )
 }
 
-function getLocalGrid (grid, i, j) {
+function getLocalGrid (grid, ci, cj) {
   let h = grid.length
   let w = grid[0].length
-  let inRange = (x, y) => x >= 0 && x < w && y >= 0 && y < h
   let localGrid = []
   for (let di = -1; di <= 1; di++) {
+    let i = ci + di
     let row = []
     for (let dj = -1; dj <= 1; dj++) {
-      row.push(inRange(j + dj, i + di) ? grid[i + di][j + dj] : { density: 255 })
+      let j = cj + dj
+      if (j >= 0 && j < w && i >= 0 && i < h) {
+        row.push(grid[i][j])
+      } else {
+        row.push({ density: 255 })
+      }
     }
     localGrid.push(row)
   }
