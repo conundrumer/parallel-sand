@@ -1,5 +1,12 @@
+function setMoved(cell, moved) {
+  return {
+    density: cell.density,
+    moved
+  }
+}
+
 export function resetMetaData ([,[,center,],]) {
-  return {...center, moved: false}
+  return setMoved(center, false)
 }
 
 export function gravity (d) {
@@ -8,10 +15,10 @@ export function gravity (d) {
       return center
     }
     if (center.density === d && bottom.density < center.density && !bottom.moved){
-      return {...bottom, moved: true}
+      return setMoved(bottom, true)
     }
     if (top.density === d && center.density < top.density && top.density !== 255 && !top.moved) {
-      return {...top, moved: true}
+      return setMoved(top, true)
     }
     return center
   }
@@ -45,13 +52,13 @@ export function slideDisplace (d, right = false) {
       [bl, br] = [br, bl]
     }
     if (shouldThreeWaySwap(d, center, bottom, bl, cl)) {
-      return {...cl, moved: true}
+      return setMoved(cl, true)
     }
     if (shouldThreeWaySwap(d, cr, br, bottom, center)) {
-      return {...bottom, moved: true}
+      return setMoved(bottom, true)
     }
     if (shouldThreeWaySwap(d, tr, cr, center, top)) {
-      return {...tr, moved: true}
+      return setMoved(tr, true)
     }
     return center
   }
@@ -72,10 +79,10 @@ export function slide (d, right = false) {
       [bl, br] = [br, bl]
     }
     if (shouldDiagonalSwap(d, center, bottom, bl)) {
-      return {...bl, moved: true}
+      return setMoved(bl, true)
     }
     if (shouldDiagonalSwap(d, tr, cr, center)) {
-      return {...tr, moved: true}
+      return setMoved(tr, true)
     }
     return center
   }
