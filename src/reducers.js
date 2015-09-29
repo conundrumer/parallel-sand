@@ -27,11 +27,15 @@ function getLocalGrid (grid, i, j) {
   let h = grid.length
   let w = grid[0].length
   let inRange = (x, y) => x >= 0 && x < w && y >= 0 && y < h
-  return _.map(_.range(-1, 2), y =>
-    _.map(_.range(-1, 2), x =>
-      inRange(j + x, i + y) ? grid[i + y][j + x] : { density: 255 }
-    )
-  )
+  let localGrid = []
+  for (let di = -1; di <= 1; di++) {
+    let row = []
+    for (let dj = -1; dj <= 1; dj++) {
+      row.push(inRange(j + dj, i + di) ? grid[i + di][j + dj] : { density: 255 })
+    }
+    localGrid.push(row)
+  }
+  return localGrid
 }
 
 function ensureConservationOfMass (grid, nextGrid) {
