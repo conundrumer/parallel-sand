@@ -30,9 +30,15 @@ export default class App extends React.Component {
 
   componentDidMount () {
 
-    setInterval(() => this.props.dispatch({
-      type: 'STEP'
-    }), 50)
+    let update = () => {
+      this.props.dispatch({
+        type: 'STEP'
+      })
+      requestAnimationFrame(update)
+    }
+    update()
+
+    // setInterval(update, 500)
 
     this.canvas = React.findDOMNode(this.refs.canvas)
     this.ctx = this.canvas.getContext('2d')
