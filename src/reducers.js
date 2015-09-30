@@ -111,6 +111,7 @@ function step (grid, rules) {
 
 const INIT = {
   data: {
+    index: 0,
     width: N,
     height: N,
     grid: makeRandomGrid()
@@ -118,30 +119,36 @@ const INIT = {
 }
 
 import {resetMetaData, gravity, slideDisplace, slide} from './rules'
-const rules = [
-  resetMetaData,
-  gravity(1),
-  slideDisplace(1),
-  slideDisplace(1, true),
-  slide(1),
-  slide(1, true),
-  gravity(2),
-  slideDisplace(2),
-  slideDisplace(2, true),
-  slide(2),
-  slide(2, true),
-  gravity(3),
-  slideDisplace(3),
-  slideDisplace(3, true),
-  slide(3),
-  slide(3, true)
-]
+function makeBiasedRules(right = false) {
+  return [
+    resetMetaData,
+    gravity(1),
+    slideDisplace(1, !right),
+    slideDisplace(1, right),
+    slide(1, !right),
+    slide(1, right),
+    gravity(2),
+    slideDisplace(2, !right),
+    slideDisplace(2, right),
+    slide(2, !right),
+    slide(2, right),
+    gravity(3),
+    slideDisplace(3, !right),
+    slideDisplace(3, right),
+    slide(3, !right),
+    slide(3, right)
+  ]
+}
+
+const leftBiasedRules = makeBiasedRules()
+const rightBiasedRules = makeBiasedRules(true)
 
 export function data (state = INIT.data, action) {
   switch (action.type) {
     case ActionTypes.STEP:
       return {...state,
-        grid: step(state.grid, rules)
+        index: state.index + 1,
+        grid: step(state.grid, state.index % 2 === 0 ? leftBiasedRules : rightBiasedRules)
       }
     default:
       return state
