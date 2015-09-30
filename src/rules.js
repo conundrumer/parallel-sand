@@ -1,26 +1,42 @@
-function setMoved(cell, moved) {
+// rule(prevGrid, cell, i, j)
+
+function setMoved (cell, moved) {
   return {
     density: cell.density,
     moved
   }
 }
 
-export function resetMetaData ([,[,center,],]) {
-  return setMoved(center, false)
+function getCellAt (grid, i, j) {
+  let h = grid.length
+  let w = grid[0].length
+  if (j >= 0 && j < w && i >= 0 && i < h) {
+    return grid[i][j]
+  } else {
+    return {
+      density: 255
+    }
+  }
+}
+
+export function resetMetaData (grid, cell) {
+  return setMoved(cell, false)
 }
 
 export function gravity (d) {
-  return ([[,top,],[,center,],[,bottom,]]) => {
-    if (center.moved) {
-      return center
+  return (grid, cell, i, j) => {
+    let top = getCellAt(grid, i - 1, j)
+    let bottom = getCellAt(grid, i + 1, j)
+    if (cell.moved) {
+      return cell
     }
-    if (center.density === d && bottom.density < center.density && !bottom.moved){
+    if (cell.density === d && bottom.density < cell.density && !bottom.moved){
       return setMoved(bottom, true)
     }
-    if (top.density === d && center.density < top.density && top.density !== 255 && !top.moved) {
+    if (top.density === d && cell.density < top.density && top.density !== 255 && !top.moved) {
       return setMoved(top, true)
     }
-    return center
+    return cell
   }
 }
 
@@ -38,52 +54,52 @@ function shouldThreeWaySwap (d, center, bottom, bl, cl) {
 }
 
 export function slideDisplace (d, right = false) {
-  return ([
-    [tl, top, tr],
-    [cl, center, cr],
-    [bl, bottom, br]
-  ]) => {
-    if (center.moved) {
-      return center
+  return (grid, cell, i, j) => {
+    if (cell.moved) {
+      return cell
     }
-    if (right) {
-      [tl, tr] = [tr, tl];
-      [cl, cr] = [cr, cl];
-      [bl, br] = [br, bl]
+    let dir = right ? -1 : 1
+    let top = getCellAt(grid, i - 1, j)
+    let bottom = getCellAt(grid, i + 1, j)
+    // let topLeft = getCellAt(grid, i - 1, j - dir)
+    let middleLeft = getCellAt(grid, i, j - dir)
+    let bottomLeft = getCellAt(grid, i + 1, j - dir)
+    let topRight = getCellAt(grid, i - 1, j + dir)
+    let middleRight = getCellAt(grid, i, j + dir)
+    let bottomRight = getCellAt(grid, i + 1, j + dir)
+    if (shouldThreeWaySwap(d, cell, bottom, bottomLeft, middleLeft)) {
+      return setMoved(middleLeft, true)
     }
-    if (shouldThreeWaySwap(d, center, bottom, bl, cl)) {
-      return setMoved(cl, true)
-    }
-    if (shouldThreeWaySwap(d, cr, br, bottom, center)) {
+    if (shouldThreeWaySwap(d, middleRight, bottomRight, bottom, cell)) {
       return setMoved(bottom, true)
     }
-    if (shouldThreeWaySwap(d, tr, cr, center, top)) {
-      return setMoved(tr, true)
+    if (shouldThreeWaySwap(d, topRight, middleRight, cell, top)) {
+      return setMoved(topRight, true)
     }
-    return center
+    return cell
   }
 }
 
 export function slide (d, right = false) {
-  return ([
-    [tl, top, tr],
-    [cl, center, cr],
-    [bl, bottom, br]
-  ]) => {
-    if (center.moved) {
-      return center
+  return (grid, cell, i, j) => {
+    if (cell.moved) {
+      return cell
     }
-    if (right) {
-      [tl, tr] = [tr, tl];
-      [cl, cr] = [cr, cl];
-      [bl, br] = [br, bl]
+    let dir = right ? -1 : 1
+    // let top = getCellAt(grid, i - 1, j)
+    let bottom = getCellAt(grid, i + 1, j)
+    // let topLeft = getCellAt(grid, i - 1, j - dir)
+    // let middleLeft = getCellAt(grid, i, j - dir)
+    let bottomLeft = getCellAt(grid, i + 1, j - dir)
+    let topRight = getCellAt(grid, i - 1, j + dir)
+    let middleRight = getCellAt(grid, i, j + dir)
+    // let bottomRight = getCellAt(grid, i + 1, j + dir)
+    if (shouldDiagonalSwap(d, cell, bottom, bottomLeft)) {
+      return setMoved(bottomLeft, true)
     }
-    if (shouldDiagonalSwap(d, center, bottom, bl)) {
-      return setMoved(bl, true)
+    if (shouldDiagonalSwap(d, topRight, middleRight, cell)) {
+      return setMoved(topRight, true)
     }
-    if (shouldDiagonalSwap(d, tr, cr, center)) {
-      return setMoved(tr, true)
-    }
-    return center
+    return cell
   }
 }

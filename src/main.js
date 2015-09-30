@@ -31,19 +31,18 @@ let render = (store, rootElement) => {
 import _ from 'lodash'
 let prevGrid
 let stopUpdates = false
-let enhanceStore = applyMiddleware(
-  thunk,
-  ({getState}) => next => action => {
-    if (action.type === 'STEP' && !stopUpdates) {
-      next(action)
-      let grid = getState().data.grid
-      if (_.eq(grid, prevGrid)) {
-        stopUpdates = true
-      } else {
-        prevGrid = grid
-      }
-    }
-  }
+let enhanceStore = applyMiddleware(thunk
+  // , ({getState}) => next => action => {
+  //   if (action.type === 'STEP' && !stopUpdates) {
+  //     next(action)
+  //     let grid = getState().data.grid
+  //     if (_.eq(grid, prevGrid)) {
+  //       stopUpdates = true
+  //     } else {
+  //       prevGrid = grid
+  //     }
+  //   }
+  // }
 )
 const reducer = combineReducers(reducers)
 const createAppStore = enhanceStore(createStore)

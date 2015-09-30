@@ -23,6 +23,17 @@ function makeRandomGrid () {
   )
 }
 
+// function getLocalGridSlow (grid, i, j) {
+//   let h = grid.length
+//   let w = grid[0].length
+//   let inRange = (x, y) => x >= 0 && x < w && y >= 0 && y < h
+//   return _.map(_.range(-1, 2), y =>
+//     _.map(_.range(-1, 2), x =>
+//       inRange(j + x, i + y) ? grid[i + y][j + x] : { density: 255 }
+//     )
+//   )
+// }
+
 function getLocalGrid (grid, ci, cj) {
   let h = grid.length
   let w = grid[0].length
@@ -51,10 +62,10 @@ function ensureConservationOfMass (grid, nextGrid) {
 }
 
 // function stepDebug (grid, rules) {
+//   // console.log('step-debug')
 //   let g = _.reduce(rules, (prevGrid, rule) => {
 //     let x = map2(prevGrid, (cell, i, j) => {
-//       let g = getLocalGrid(prevGrid, i, j)
-//       return rule(g)
+//       return rule(prevGrid, cell, i, j)
 //     })
 //     // console.table(map2(x, cell => cell.density))
 //     return x
@@ -68,13 +79,35 @@ function ensureConservationOfMass (grid, nextGrid) {
 //   return g
 // }
 
+// function stepSlow (grid, rules) {
+//   return _.reduce(rules, (prevGrid, rule) =>
+//     map2(prevGrid, (cell, i, j) => {
+//       return rule(prevGrid, cell, i, j)
+//     })
+//   , grid)
+// }
+
+function cloneGrid(grid) {
+  return _.map(grid, row => _.map(row, cell => cell))
+}
+
 function step (grid, rules) {
-  return _.reduce(rules, (prevGrid, rule) =>
-    map2(prevGrid, (cell, i, j) => {
-      let g = getLocalGrid(prevGrid, i, j)
-      return rule(g)
-    })
-  , grid)
+  let h = grid.length
+  let w = grid[0].length
+  let gridA = cloneGrid(grid)
+  let gridB = cloneGrid(grid)
+  let prevGrid, nextGrid
+
+  for (let n = 0; n < rules.length; n++) {
+    let rule = rules[n];
+    [prevGrid, nextGrid] = n % 2 === 0 ? [gridA, gridB] : [gridB, gridA]
+    for (let i = 0; i < h; i++) {
+      for (let j = 0; j < w; j++) {
+        nextGrid[i][j] = rule(prevGrid, prevGrid[i][j], i, j)
+      }
+    }
+  }
+  return nextGrid
 }
 
 const INIT = {
