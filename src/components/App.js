@@ -3,7 +3,7 @@ import React from 'react'
 import '../styles.less'
 
 function getCellColor (cell) {
-  let density = cell.density
+  let density = cell & 0xFF
   return [
     (() => {
       switch (density) {
@@ -49,16 +49,18 @@ export default class App extends React.Component {
     let {width, height, grid} = this.props
     let imageData = this.ctx.createImageData(width, height)
 
-    grid.forEach((row, y) => {
-      row.forEach((cell, x) => {
-        let index = (x + y * imageData.width) * 4
+    for (let i = 0; i < grid.length; i++) {
+      let row = grid[i]
+      for (let j = 0; j < row.length; j++) {
+        let cell = row[j]
+        let index = (j + i * imageData.width) * 4
         let [r, g, b, a] = getCellColor(cell)
         imageData.data[index + 0] = r
         imageData.data[index + 1] = g
         imageData.data[index + 2] = b
         imageData.data[index + 3] = a
-      })
-    })
+      }
+    }
     this.ctx.putImageData(imageData, 0, 0)
   }
 

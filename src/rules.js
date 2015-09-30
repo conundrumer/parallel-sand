@@ -1,10 +1,19 @@
 // rule(prevGrid, cell, i, j)
 
 function setMoved (cell, moved) {
-  return {
-    density: cell.density,
-    moved
+  if (moved) {
+    return cell | 0x80000000
+  } else {
+    return cell & 0x7FFFFFFF
   }
+}
+
+function hasMoved (cell) {
+  return cell & 0x80000000
+}
+
+function getDensity (cell) {
+  return cell & 0xFF
 }
 
 function getCellAt (grid, i, j) {
@@ -13,9 +22,7 @@ function getCellAt (grid, i, j) {
   if (j >= 0 && j < w && i >= 0 && i < h) {
     return grid[i][j]
   } else {
-    return {
-      density: 255
-    }
+    return 0xFF
   }
 }
 
@@ -27,13 +34,13 @@ export function gravity (d) {
   return (grid, cell, i, j) => {
     let top = getCellAt(grid, i - 1, j)
     let bottom = getCellAt(grid, i + 1, j)
-    if (cell.moved) {
+    if (hasMoved(cell)) {
       return cell
     }
-    if (cell.density === d && bottom.density < cell.density && !bottom.moved){
+    if (getDensity(cell) === d && getDensity(bottom) < getDensity(cell) && !hasMoved(bottom)){
       return setMoved(bottom, true)
     }
-    if (top.density === d && cell.density < top.density && top.density !== 255 && !top.moved) {
+    if (getDensity(top) === d && getDensity(cell) < getDensity(top) && getDensity(top) !== 255 && !hasMoved(top)) {
       return setMoved(top, true)
     }
     return cell
@@ -41,21 +48,21 @@ export function gravity (d) {
 }
 
 function shouldDiagonalSwap (d, center, bottom, bl) {
-  return (center.density === d && !center.moved) &&
-    (bottom.density >= center.density) &&
-    (!bl.moved && bl.density !== 255 && center.density > bl.density)
+  return (getDensity(center) === d && !hasMoved(center)) &&
+    (getDensity(bottom) >= getDensity(center)) &&
+    (!hasMoved(bl) && getDensity(bl) !== 255 && getDensity(center) > getDensity(bl))
 }
 
 function shouldThreeWaySwap (d, center, bottom, bl, cl) {
-  return (center.density === d && !center.moved) &&
-    (bottom.density >= center.density) &&
-    (!bl.moved && bl.density !== 255 && center.density > bl.density) &&
-    (!cl.moved && cl.density !== 255 && bl.density > cl.density)
+  return (getDensity(center) === d && !hasMoved(center)) &&
+    (getDensity(bottom) >= getDensity(center)) &&
+    (!hasMoved(bl) && getDensity(bl) !== 255 && getDensity(center) > getDensity(bl)) &&
+    (!hasMoved(cl) && getDensity(cl) !== 255 && getDensity(bl) > getDensity(cl))
 }
 
 export function slideDisplace (d, right = false) {
   return (grid, cell, i, j) => {
-    if (cell.moved) {
+    if (hasMoved(cell)) {
       return cell
     }
     let dir = right ? -1 : 1
@@ -82,7 +89,7 @@ export function slideDisplace (d, right = false) {
 
 export function slide (d, right = false) {
   return (grid, cell, i, j) => {
-    if (cell.moved) {
+    if (hasMoved(cell)) {
       return cell
     }
     let dir = right ? -1 : 1

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import * as ActionTypes from './actions'
 
-const N = 64
+const N = 128
 
 function map2 (arrays, fn) {
   return _.map(arrays, (array, i) =>
@@ -14,12 +14,11 @@ function map2 (arrays, fn) {
 // import
 function makeRandomGrid () {
   return _.range(N).map(y =>
-    _.range(N).map(x => ({
-      density:
-        Math.random() < 1 / 4 ? 3 :
-        Math.random() < 1 / 3 ? 2 :
-        Math.random() < 1 / 2 ? 1 : 0
-    }))
+    _.range(N).map(x =>
+      Math.random() < 1 / 4 ? 3 :
+      Math.random() < 1 / 3 ? 2 :
+      Math.random() < 1 / 2 ? 1 : 0
+    )
   )
 }
 
@@ -46,7 +45,7 @@ function getLocalGrid (grid, ci, cj) {
       if (j >= 0 && j < w && i >= 0 && i < h) {
         row.push(grid[i][j])
       } else {
-        row.push({ density: 255 })
+        row.push(0xFF)
       }
     }
     localGrid.push(row)
@@ -56,7 +55,7 @@ function getLocalGrid (grid, ci, cj) {
 
 function ensureConservationOfMass (grid, nextGrid) {
   let [counts, nextCounts] = _.map([grid, nextGrid], g =>
-    _.mapValues(_.groupBy(_.flatten(g), 'density'), dGroup => dGroup.length)
+    _.mapValues(_.groupBy(_.flatten(g), x => x), dGroup => dGroup.length)
   )
   return _.eq(counts, nextCounts)
 }
@@ -67,14 +66,14 @@ function ensureConservationOfMass (grid, nextGrid) {
 //     let x = map2(prevGrid, (cell, i, j) => {
 //       return rule(prevGrid, cell, i, j)
 //     })
-//     // console.table(map2(x, cell => cell.density))
+//     // console.table(x)
 //     return x
 //   }, grid)
 //   if (!ensureConservationOfMass(grid, g)) {
 //     console.error('mass not conserved:')
 //     alert('mass not conserved')
-//     console.table(map2(grid, cell => cell.density))
-//     console.table(map2(g, cell => cell.density))
+//     console.table(grid)
+//     console.table(g)
 //   }
 //   return g
 // }
