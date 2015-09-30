@@ -17,7 +17,8 @@ function makeRandomGrid () {
     _.range(N).map(x =>
       Math.random() < 1 / 4 ? 3 :
       Math.random() < 1 / 3 ? 2 :
-      Math.random() < 1 / 2 ? 1 : 0
+      Math.random() < 1 / 2 ? 1 :
+      Math.random() < 1 / 4 ? 0xFF : 0
     )
   )
 }
@@ -55,7 +56,7 @@ function getLocalGrid (grid, ci, cj) {
 
 function ensureConservationOfMass (grid, nextGrid) {
   let [counts, nextCounts] = _.map([grid, nextGrid], g =>
-    _.mapValues(_.groupBy(_.flatten(g), x => x), dGroup => dGroup.length)
+    _.mapValues(_.groupBy(_.flatten(g), x => x & 0xFF), dGroup => dGroup.length)
   )
   return _.eq(counts, nextCounts)
 }
@@ -118,37 +119,36 @@ const INIT = {
   }
 }
 
-import {resetMetaData, gravity, slideDisplace, slide} from './rules'
-function makeBiasedRules(right = false) {
+import {resetMetaData, cellBlock, gravityDown, gravitySlide} from './rules'
+function makeBiasedRules (bias) {
+  let rightBias = bias >> 1 & 1
+  let trBias = bias & 1
+  let blockRules = [
+    gravitySlide(rightBias),
+    gravitySlide(!rightBias),
+    gravitySlide(rightBias, true),
+    gravitySlide(!rightBias, true),
+    gravityDown
+  ]
   return [
     resetMetaData,
-    gravity(1),
-    slideDisplace(1, !right),
-    slideDisplace(1, right),
-    slide(1, !right),
-    slide(1, right),
-    gravity(2),
-    slideDisplace(2, !right),
-    slideDisplace(2, right),
-    slide(2, !right),
-    slide(2, right),
-    gravity(3),
-    slideDisplace(3, !right),
-    slideDisplace(3, right),
-    slide(3, !right),
-    slide(3, right)
+    cellBlock(trBias, blockRules),
+    cellBlock(trBias ^ 0b11, blockRules)
   ]
 }
-
-const leftBiasedRules = makeBiasedRules()
-const rightBiasedRules = makeBiasedRules(true)
+const biasedRules = [
+  makeBiasedRules(0),
+  makeBiasedRules(1),
+  makeBiasedRules(2),
+  makeBiasedRules(3)
+]
 
 export function data (state = INIT.data, action) {
   switch (action.type) {
     case ActionTypes.STEP:
       return {...state,
         index: state.index + 1,
-        grid: step(state.grid, state.index % 2 === 0 ? leftBiasedRules : rightBiasedRules)
+        grid: step(state.grid, biasedRules[state.index & 0b11])
       }
     default:
       return state

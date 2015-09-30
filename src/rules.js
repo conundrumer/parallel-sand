@@ -30,83 +30,134 @@ export function resetMetaData (grid, cell) {
   return setMoved(cell, false)
 }
 
-export function gravity (d) {
+function perm (tl, tr, bl, br) {
+  return tl << 6 | tr << 4 | bl << 2 | br
+}
+
+const
+  TL = 0b00,
+  TR = 0b01,
+  BL = 0b10,
+  BR = 0b11
+
+function swap(a, b) {
+  let p = [TL, TR, BL, BR];
+  [p[b], p[a]] = [p[a], p[b]]
+  return perm(...p)
+}
+
+const
+  NO_MOVE = perm(
+    TL, TR,
+    BL, BR
+  ),
+  SWAP_LEFT = swap(TL, BL),
+  SWAP_RIGHT = swap(TR, BR),
+  // SWAP_TOP = swap(TL, TR),
+  // SWAP_BOTTOM = swap(BL, BR),
+  SWAP_DIAG_TL = swap(TL, BR),
+  SWAP_DIAG_TR = swap(TR, BL),
+  SWAP_VERT = perm(
+    BL, BR,
+    TL, TR
+  ),
+  // SWAP_HORZ = perm(
+  //   TR, TL,
+  //   BR, BL
+  // ),
+  ROTATE_TL_RIGHT = perm(
+    BL, TL,
+    TR, BR
+  ),
+  ROTATE_TR_LEFT = perm(
+    TR, BR,
+    BL, TL
+  ),
+  ROTATE_BL_RIGHT = perm(
+    BR, TR,
+    TL, BL
+  ),
+  ROTATE_BR_LEFT = perm(
+    TL, BL,
+    BR, TR
+  )
+
+export function cellBlock (bias, rules) {
   return (grid, cell, i, j) => {
-    let top = getCellAt(grid, i - 1, j)
-    let bottom = getCellAt(grid, i + 1, j)
-    if (hasMoved(cell)) {
+    let parity = (i & 1) << 1 | j & 1
+    let corner = bias ^ parity
+    let di = corner >> 1 & 1
+    let dj = corner & 1
+    let tl = getCellAt(grid, i - di, j - dj)
+    let tr = getCellAt(grid, i - di, j - dj + 1)
+    let bl = getCellAt(grid, i - di + 1, j - dj)
+    let br = getCellAt(grid, i - di + 1, j - dj + 1)
+
+    let permutate = NO_MOVE
+    for (let n = 0; n < rules.length; n++) {
+      let rule = rules[n]
+      permutate = rule(tl, tr, bl, br)
+      if (permutate !== NO_MOVE) {
+        break
+      }
+    }
+    let nextCorner = permutate >> ((3 - corner) << 1) & 0b11
+    if (corner === nextCorner) {
       return cell
     }
-    if (getDensity(cell) === d && getDensity(bottom) < getDensity(cell) && !hasMoved(bottom)){
-      return setMoved(bottom, true)
+    switch (nextCorner) {
+      case TL: return setMoved(tl, true)
+      case TR: return setMoved(tr, true)
+      case BL: return setMoved(bl, true)
+      case BR: return setMoved(br, true)
     }
-    if (getDensity(top) === d && getDensity(cell) < getDensity(top) && getDensity(top) !== 255 && !hasMoved(top)) {
-      return setMoved(top, true)
-    }
-    return cell
   }
 }
 
-function shouldDiagonalSwap (d, center, bottom, bl) {
-  return (getDensity(center) === d && !hasMoved(center)) &&
-    (getDensity(bottom) >= getDensity(center)) &&
-    (!hasMoved(bl) && getDensity(bl) !== 255 && getDensity(center) > getDensity(bl))
+function canMove (cell) {
+  return !hasMoved(cell) && getDensity(cell) !== 255
 }
 
-function shouldThreeWaySwap (d, center, bottom, bl, cl) {
-  return (getDensity(center) === d && !hasMoved(center)) &&
-    (getDensity(bottom) >= getDensity(center)) &&
-    (!hasMoved(bl) && getDensity(bl) !== 255 && getDensity(center) > getDensity(bl)) &&
-    (!hasMoved(cl) && getDensity(cl) !== 255 && getDensity(bl) > getDensity(cl))
+function shouldGravitySwap (bottom, top) {
+  return canMove(bottom) && canMove(top) && getDensity(bottom) < getDensity(top)
 }
 
-export function slideDisplace (d, right = false) {
-  return (grid, cell, i, j) => {
-    if (hasMoved(cell)) {
-      return cell
-    }
-    let dir = right ? -1 : 1
-    let top = getCellAt(grid, i - 1, j)
-    let bottom = getCellAt(grid, i + 1, j)
-    // let topLeft = getCellAt(grid, i - 1, j - dir)
-    let middleLeft = getCellAt(grid, i, j - dir)
-    let bottomLeft = getCellAt(grid, i + 1, j - dir)
-    let topRight = getCellAt(grid, i - 1, j + dir)
-    let middleRight = getCellAt(grid, i, j + dir)
-    let bottomRight = getCellAt(grid, i + 1, j + dir)
-    if (shouldThreeWaySwap(d, cell, bottom, bottomLeft, middleLeft)) {
-      return setMoved(middleLeft, true)
-    }
-    if (shouldThreeWaySwap(d, middleRight, bottomRight, bottom, cell)) {
-      return setMoved(bottom, true)
-    }
-    if (shouldThreeWaySwap(d, topRight, middleRight, cell, top)) {
-      return setMoved(topRight, true)
-    }
-    return cell
+export function gravityDown (tl, tr, bl, br) {
+  switch (shouldGravitySwap(bl, tl) << 1 | shouldGravitySwap(br, tr)) {
+    case 0b00: return NO_MOVE
+    case 0b01: return SWAP_RIGHT
+    case 0b10: return SWAP_LEFT
+    case 0b11: return SWAP_VERT
   }
 }
 
-export function slide (d, right = false) {
-  return (grid, cell, i, j) => {
-    if (hasMoved(cell)) {
-      return cell
+export function gravitySlide (right = false, flipped = false) {
+  let orientation = right << 1 | flipped
+  return (tl, tr, bl, br) => {
+    if (right) {
+      [tl, tr] = [tr, tl];
+      [bl, br] = [br, bl]
     }
-    let dir = right ? -1 : 1
-    // let top = getCellAt(grid, i - 1, j)
-    let bottom = getCellAt(grid, i + 1, j)
-    // let topLeft = getCellAt(grid, i - 1, j - dir)
-    // let middleLeft = getCellAt(grid, i, j - dir)
-    let bottomLeft = getCellAt(grid, i + 1, j - dir)
-    let topRight = getCellAt(grid, i - 1, j + dir)
-    let middleRight = getCellAt(grid, i, j + dir)
-    // let bottomRight = getCellAt(grid, i + 1, j + dir)
-    if (shouldDiagonalSwap(d, cell, bottom, bottomLeft)) {
-      return setMoved(bottomLeft, true)
+    if (flipped) {
+      [tl, bl] = [bl, tl];
+      [tr, br] = [br, tr]
     }
-    if (shouldDiagonalSwap(d, topRight, middleRight, cell)) {
-      return setMoved(topRight, true)
+    if (canMove(tr) && canMove(bl) && canMove(tl) && (
+      (!flipped && (!canMove(br) || getDensity(br) >= getDensity(tr)) && getDensity(tr) > getDensity(bl)) ||
+      (flipped && (!canMove(br) || getDensity(br) <= getDensity(tr)) && getDensity(tr) < getDensity(bl)))
+    ) {
+      if ((!flipped && getDensity(tl) < getDensity(bl)) || (flipped && getDensity(tl) > getDensity(bl))) {
+        switch (orientation) {
+          case 0b00: return ROTATE_TL_RIGHT
+          case 0b01: return ROTATE_BL_RIGHT
+          case 0b10: return ROTATE_TR_LEFT
+          case 0b11: return ROTATE_BR_LEFT
+        }
+      }
+      if (getDensity(tl) !== getDensity(tr)) {
+        return (right == flipped) ? SWAP_DIAG_TR : SWAP_DIAG_TL
+      }
     }
-    return cell
+    return NO_MOVE
   }
 }

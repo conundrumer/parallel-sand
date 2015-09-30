@@ -4,26 +4,18 @@ import '../styles.less'
 
 function getCellColor (cell) {
   let density = cell & 0xFF
-  return [
-    (() => {
-      switch (density) {
-        case 1: return 127
-        case 2: /* falls through */
-        case 3: return 255
-        default: return 0
-      }
-    })(),
-    (() => {
-      switch (density) {
-        case 1: return 0
-        case 2: return 127
-        case 3: return 255
-        default: return 0
-      }
-    })(),
-    0,
-    255
-  ]
+  switch (density) {
+    case 1:
+      return [255, 0, 0, 255]
+    case 2:
+      return [255, 127, 0, 255]
+    case 3:
+      return [255, 255, 0, 255]
+    case 255:
+      return [127, 127, 127, 255]
+    default:
+      return [0, 0, 0, 255]
+  }
 }
 
 export default class App extends React.Component {
