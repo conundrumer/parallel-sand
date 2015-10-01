@@ -121,19 +121,14 @@ const INIT = {
 
 import {resetMetaData, cellBlock, gravityDown, gravitySlide} from './rules'
 function makeBiasedRules (bias) {
-  let rightBias = bias >> 1 & 1
-  let trBias = bias & 1
   let blockRules = [
-    gravitySlide(rightBias),
-    gravitySlide(!rightBias),
-    gravitySlide(rightBias, true),
-    gravitySlide(!rightBias, true),
+    gravitySlide,
     gravityDown
   ]
   return [
     resetMetaData,
-    cellBlock(trBias, blockRules),
-    cellBlock(trBias ^ 0b11, blockRules)
+    cellBlock(bias, blockRules),
+    cellBlock(bias ^ 0b11, blockRules)
   ]
 }
 const biasedRules = [
@@ -148,7 +143,7 @@ export function data (state = INIT.data, action) {
     case ActionTypes.STEP:
       return {...state,
         index: state.index + 1,
-        grid: step(state.grid, biasedRules[state.index & 0b11])
+        grid: step(state.grid, biasedRules[state.index & 0b1])
       }
     default:
       return state

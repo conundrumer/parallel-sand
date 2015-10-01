@@ -8,8 +8,8 @@ function setMoved (cell, moved) {
   }
 }
 
-function hasMoved (cell) {
-  return cell & 0x80000000
+function canMove (cell) {
+  return !(cell & 0x80000000)
 }
 
 function getDensity (cell) {
@@ -22,12 +22,12 @@ function getCellAt (grid, i, j) {
   if (j >= 0 && j < w && i >= 0 && i < h) {
     return grid[i][j]
   } else {
-    return 0xFF
+    return 0x800000FF
   }
 }
 
 export function resetMetaData (grid, cell) {
-  return setMoved(cell, false)
+  return setMoved(cell, getDensity(cell) === 0xFF)
 }
 
 function perm (tl, tr, bl, br) {
@@ -114,10 +114,6 @@ export function cellBlock (bias, rules) {
   }
 }
 
-function canMove (cell) {
-  return !hasMoved(cell) && getDensity(cell) !== 255
-}
-
 function shouldGravitySwap (bottom, top) {
   return canMove(bottom) && canMove(top) && getDensity(bottom) < getDensity(top)
 }
@@ -131,33 +127,62 @@ export function gravityDown (tl, tr, bl, br) {
   }
 }
 
-export function gravitySlide (right = false, flipped = false) {
-  let orientation = right << 1 | flipped
-  return (tl, tr, bl, br) => {
-    if (right) {
-      [tl, tr] = [tr, tl];
-      [bl, br] = [br, bl]
+const
+  NO_SLIDE = 0,
+  SWAP_SLIDE = 1,
+  ROTATE_SLIDE = 2
+
+function trSlide (tl, tr, bl, br) {
+  if (canMove(tr) && canMove(bl) && canMove(tl) &&
+    (!canMove(br) || getDensity(br) >= getDensity(tr)) && getDensity(tr) > getDensity(bl)
+  ) {
+    if (getDensity(tl) < getDensity(bl)) {
+      return ROTATE_SLIDE
     }
-    if (flipped) {
-      [tl, bl] = [bl, tl];
-      [tr, br] = [br, tr]
+    if (getDensity(tl) !== getDensity(tr)) {
+      return SWAP_SLIDE
     }
-    if (canMove(tr) && canMove(bl) && canMove(tl) && (
-      (!flipped && (!canMove(br) || getDensity(br) >= getDensity(tr)) && getDensity(tr) > getDensity(bl)) ||
-      (flipped && (!canMove(br) || getDensity(br) <= getDensity(tr)) && getDensity(tr) < getDensity(bl)))
-    ) {
-      if ((!flipped && getDensity(tl) < getDensity(bl)) || (flipped && getDensity(tl) > getDensity(bl))) {
-        switch (orientation) {
-          case 0b00: return ROTATE_TL_RIGHT
-          case 0b01: return ROTATE_BL_RIGHT
-          case 0b10: return ROTATE_TR_LEFT
-          case 0b11: return ROTATE_BR_LEFT
-        }
-      }
-      if (getDensity(tl) !== getDensity(tr)) {
-        return (right == flipped) ? SWAP_DIAG_TR : SWAP_DIAG_TL
-      }
-    }
-    return NO_MOVE
   }
+  return NO_SLIDE
+}
+
+export function gravitySlide (tl, tr, bl, br) {
+  let slideType
+  slideType = trSlide(
+    tl, tr,
+    bl, br
+  )
+  switch (slideType) {
+    case ROTATE_SLIDE: return ROTATE_TL_RIGHT
+    case SWAP_SLIDE: return SWAP_DIAG_TR
+  }
+  slideType = trSlide(
+    tr, tl,
+    br, bl
+  )
+  switch (slideType) {
+    case ROTATE_SLIDE: return ROTATE_TR_LEFT
+    case SWAP_SLIDE: return SWAP_DIAG_TL
+  }
+  tl ^= 0xFF
+  tr ^= 0xFF
+  bl ^= 0xFF
+  br ^= 0xFF
+  slideType = trSlide(
+    bl, br,
+    tl, tr
+  )
+  switch (slideType) {
+    case ROTATE_SLIDE: return ROTATE_BL_RIGHT
+    case SWAP_SLIDE: return SWAP_DIAG_TL
+  }
+  slideType = trSlide(
+    br, bl,
+    tr, tl
+  )
+  switch (slideType) {
+    case ROTATE_SLIDE: return ROTATE_BR_LEFT
+    case SWAP_SLIDE: return SWAP_DIAG_TR
+  }
+  return NO_MOVE
 }
