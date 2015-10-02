@@ -1,8 +1,10 @@
 // rule(prevGrid, cell, i, j)
 
-function setMoved (cell, moved) {
+const MAX_DENSITY = 0x7F
+
+function setMoved (cell, moved, h, v) {
   if (moved) {
-    return cell | 0x80000000
+    return (cell & 0xFFFFF0FF) | 0x80000000 | (h << 8) | (v << 10)
   } else {
     return cell & 0x7FFFFFFF
   }
@@ -13,7 +15,7 @@ function canMove (cell) {
 }
 
 function getDensity (cell) {
-  return cell & 0xFF
+  return cell & MAX_DENSITY
 }
 
 function getCellAt (grid, i, j) {
@@ -22,12 +24,14 @@ function getCellAt (grid, i, j) {
   if (j >= 0 && j < w && i >= 0 && i < h) {
     return grid[i][j]
   } else {
-    return 0x800000FF
+    return 0x8000007F
   }
 }
 
 export function resetMetaData (grid, cell) {
-  return setMoved(cell, getDensity(cell) === 0xFF)
+  return getDensity(cell) !== MAX_DENSITY ?
+    setMoved(cell, false) :
+    cell | 0x80000000
 }
 
 function perm (tl, tr, bl, br) {
@@ -53,7 +57,7 @@ const
   ),
   SWAP_LEFT = swap(TL, BL),
   SWAP_RIGHT = swap(TR, BR),
-  // SWAP_TOP = swap(TL, TR),
+  SWAP_TOP = swap(TL, TR),
   // SWAP_BOTTOM = swap(BL, BR),
   SWAP_DIAG_TL = swap(TL, BR),
   SWAP_DIAG_TR = swap(TR, BL),
@@ -105,13 +109,20 @@ export function cellBlock (bias, rules) {
     if (corner === nextCorner) {
       return cell
     }
+    let changed = corner ^ nextCorner
+    let hChanged = changed & 0b01
+    let vChanged = changed & 0b10
     switch (nextCorner) {
-      case TL: return setMoved(tl, true)
-      case TR: return setMoved(tr, true)
-      case BL: return setMoved(bl, true)
-      case BR: return setMoved(br, true)
+      case TL: return setMoved(tl, true, hChanged ? 0b11 : 0, vChanged ? 0b11 : 0)
+      case TR: return setMoved(tr, true, hChanged ? 0b10 : 0, vChanged ? 0b11 : 0)
+      case BL: return setMoved(bl, true, hChanged ? 0b11 : 0, vChanged ? 0b10 : 0)
+      case BR: return setMoved(br, true, hChanged ? 0b10 : 0, vChanged ? 0b10 : 0)
     }
   }
+}
+
+export function setUnmovedCells (grid, cell) {
+  return canMove(cell) ? setMoved(setMoved(cell, true, 0, 0), false) : cell
 }
 
 function shouldGravitySwap (bottom, top) {
@@ -146,7 +157,7 @@ function trSlide (tl, tr, bl, br) {
   return NO_SLIDE
 }
 
-export function gravitySlide (tl, tr, bl, br) {
+export function gravityDiag (tl, tr, bl, br) {
   let slideType
   slideType = trSlide(
     tl, tr,
@@ -164,10 +175,10 @@ export function gravitySlide (tl, tr, bl, br) {
     case ROTATE_SLIDE: return ROTATE_TR_LEFT
     case SWAP_SLIDE: return SWAP_DIAG_TL
   }
-  tl ^= 0xFF
-  tr ^= 0xFF
-  bl ^= 0xFF
-  br ^= 0xFF
+  tl ^= MAX_DENSITY
+  tr ^= MAX_DENSITY
+  bl ^= MAX_DENSITY
+  br ^= MAX_DENSITY
   slideType = trSlide(
     bl, br,
     tl, tr
@@ -183,6 +194,48 @@ export function gravitySlide (tl, tr, bl, br) {
   switch (slideType) {
     case ROTATE_SLIDE: return ROTATE_BR_LEFT
     case SWAP_SLIDE: return SWAP_DIAG_TR
+  }
+  return NO_MOVE
+}
+
+function isLiquid (cell) {
+  return cell & 0x80
+}
+
+function isMovingLeft (cell) {
+  return (cell & 0x200) && !(cell & 0x100)
+}
+function isMovingRight (cell) {
+  return (cell & 0x200) && (cell & 0x100)
+}
+
+function shouldLiquidSlideRight (tl, tr, br, flipped) {
+  return getDensity(tl) > getDensity(tr) && isLiquid(tl) &&
+    (flipped ? !isMovingRight(tl) : !isMovingLeft(tl))
+}
+
+export function liquidSlide (tl, tr, bl, br) {
+  if (canMove(tr) && canMove(tl) && (
+    shouldLiquidSlideRight(tl, tr, br, false) ||
+    shouldLiquidSlideRight(tr, tl, bl, true)
+  )) {
+    return SWAP_TOP
+  }
+  return NO_MOVE
+}
+
+function shouldCarrySlideRight (tl, tr, br, flipped) {
+  return getDensity(tl) > getDensity(tr) &&
+    getDensity(br) > getDensity(tl) &&
+    (flipped ? isMovingLeft(br) : isMovingRight(br))
+}
+
+export function carrySlide (tl, tr, bl, br) {
+  if (canMove(tr) && canMove(tl) && (
+    shouldCarrySlideRight(tl, tr, br, false) ||
+    shouldCarrySlideRight(tr, tl, bl, true)
+  )) {
+    return SWAP_TOP
   }
   return NO_MOVE
 }

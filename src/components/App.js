@@ -3,7 +3,7 @@ import React from 'react'
 import '../styles.less'
 
 function getCellColor (cell) {
-  let density = cell & 0xFF
+  let density = cell & 0x7F
   switch (density) {
     case 1:
       return [255, 0, 0, 255]
@@ -11,7 +11,7 @@ function getCellColor (cell) {
       return [255, 127, 0, 255]
     case 3:
       return [255, 255, 0, 255]
-    case 255:
+    case 0x7F:
       return [127, 127, 127, 255]
     default:
       return [0, 0, 0, 255]

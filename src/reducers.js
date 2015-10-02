@@ -16,9 +16,9 @@ function makeRandomGrid () {
   return _.range(N).map(y =>
     _.range(N).map(x =>
       Math.random() < 1 / 4 ? 3 :
-      Math.random() < 1 / 3 ? 2 :
+      Math.random() < 1 / 3 ? 0x82 :
       Math.random() < 1 / 2 ? 1 :
-      Math.random() < 1 / 4 ? 0xFF : 0
+      Math.random() < 1 / 4 ? 0x7F : 0
     )
   )
 }
@@ -46,7 +46,7 @@ function getLocalGrid (grid, ci, cj) {
       if (j >= 0 && j < w && i >= 0 && i < h) {
         row.push(grid[i][j])
       } else {
-        row.push(0xFF)
+        row.push(0x7F)
       }
     }
     localGrid.push(row)
@@ -56,7 +56,7 @@ function getLocalGrid (grid, ci, cj) {
 
 function ensureConservationOfMass (grid, nextGrid) {
   let [counts, nextCounts] = _.map([grid, nextGrid], g =>
-    _.mapValues(_.groupBy(_.flatten(g), x => x & 0xFF), dGroup => dGroup.length)
+    _.mapValues(_.groupBy(_.flatten(g), x => x & 0x7F), dGroup => dGroup.length)
   )
   return _.eq(counts, nextCounts)
 }
@@ -119,23 +119,27 @@ const INIT = {
   }
 }
 
-import {resetMetaData, cellBlock, gravityDown, gravitySlide} from './rules'
-function makeBiasedRules (bias) {
-  let blockRules = [
-    gravitySlide,
+import {resetMetaData, cellBlock, gravityDown, gravityDiag, liquidSlide, setUnmovedCells} from './rules'
+function makeBiasedRules (...biases) {
+  let gravityRules = [
+    gravityDiag,
     gravityDown
+  ]
+  let slideRules = [
+    liquidSlide
   ]
   return [
     resetMetaData,
-    cellBlock(bias, blockRules),
-    cellBlock(bias ^ 0b11, blockRules)
+    ...biases.map(i => cellBlock(i, gravityRules)),
+    ...biases.map(i => cellBlock(i, slideRules)),
+    setUnmovedCells
   ]
 }
 const biasedRules = [
-  makeBiasedRules(0),
-  makeBiasedRules(1),
-  makeBiasedRules(2),
-  makeBiasedRules(3)
+  makeBiasedRules(0, 1, 2, 3),
+  makeBiasedRules(0, 1, 3, 2),
+  makeBiasedRules(1, 0, 3, 2),
+  makeBiasedRules(1, 0, 2, 3)
 ]
 
 export function data (state = INIT.data, action) {
@@ -143,7 +147,7 @@ export function data (state = INIT.data, action) {
     case ActionTypes.STEP:
       return {...state,
         index: state.index + 1,
-        grid: step(state.grid, biasedRules[state.index & 0b1])
+        grid: step(state.grid, biasedRules[state.index & 0b11])
       }
     default:
       return state
